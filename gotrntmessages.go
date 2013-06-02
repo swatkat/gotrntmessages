@@ -48,12 +48,12 @@ type MsgData interface {
 
 // Base data struct for peer messages
 type MsgDataCommon struct {
-	msgType uint
+	MsgType uint
 }
 
 // Base data struct implements interface method
 func (msgDataCmn MsgDataCommon) GetMsgType() (uint, string) {
-	return msgDataCmn.msgType, MsgTypeNames[msgDataCmn.msgType]
+	return msgDataCmn.MsgType, MsgTypeNames[msgDataCmn.MsgType]
 }
 
 // Choke and Unchoke messages
@@ -155,7 +155,7 @@ func DecodeMessage(buf []byte) (MsgData, bool) {
 	case MsgTypeChoke, MsgTypeUnchoke:
 		// <len=0001><id=0/1>
 		var msgData MsgDataChoke
-		msgData.msgType = msgType
+		msgData.MsgType = msgType
 		if msgType == MsgTypeChoke {
 			msgData.IsChoking = true
 		} else {
@@ -166,7 +166,7 @@ func DecodeMessage(buf []byte) (MsgData, bool) {
 	case MsgTypeInterested, MsgTypeNotInterested:
 		// <len=0001><id=2/3>
 		var msgData MsgDataInterested
-		msgData.msgType = msgType
+		msgData.MsgType = msgType
 		if msgType == MsgTypeInterested {
 			msgData.IsInterested = true
 		} else {
@@ -177,21 +177,21 @@ func DecodeMessage(buf []byte) (MsgData, bool) {
 	case MsgTypeHave:
 		// <id=4><piece index>
 		var msgData MsgDataHave
-		msgData.msgType = msgType
+		msgData.MsgType = msgType
 		msgData.PieceIndex = getUint32FromBytes(buf[1:5])
 		return msgData, true
 
 	case MsgTypeBitfield:
 		// <id=5><bitfield>
 		var msgData MsgDataBitfield
-		msgData.msgType = msgType
+		msgData.MsgType = msgType
 		msgData.Bitfield = buf[1:]
 		return msgData, true
 
 	case MsgTypePiece:
 		// <id=7><index><begin><block>
 		var msgData MsgDataPiece
-		msgData.msgType = msgType
+		msgData.MsgType = msgType
 		msgData.PieceIndex = getUint32FromBytes(buf[1:5])
 		msgData.PieceBytesBegin = getUint32FromBytes(buf[5:9])
 		msgData.PieceBlock = buf[9:]
@@ -200,7 +200,7 @@ func DecodeMessage(buf []byte) (MsgData, bool) {
 	case MsgTypeRequest, MsgTypeCancel:
 		// <id=6/8><index><begin><length>
 		var msgData MsgDataRequestCancel
-		msgData.msgType = msgType
+		msgData.MsgType = msgType
 		msgData.PieceIndex = getUint32FromBytes(buf[1:5])
 		msgData.PieceBytesBegin = getUint32FromBytes(buf[5:9])
 		msgData.PieceBytesLen = getUint32FromBytes(buf[9:13])
@@ -209,14 +209,14 @@ func DecodeMessage(buf []byte) (MsgData, bool) {
 	case MsgTypePort:
 		// <id=9><listen-port>
 		var msgData MsgDataPort
-		msgData.msgType = msgType
+		msgData.MsgType = msgType
 		msgData.PeerPort = getUint16FromBytes(buf[1:3])
 		return msgData, true
 
 	case MsgTypeHandshake:
 		// <pstrlen><pstr><reserved><info_hash><peer_id>
 		var msgData MsgDataHandshake
-		msgData.msgType = msgType
+		msgData.MsgType = msgType
 		msgData.ProtocolStrLen = int(buf[0])
 		msgData.ProtocolStr = string(buf[1:20])
 		msgData.ReservedBytes = string(buf[20:28])
