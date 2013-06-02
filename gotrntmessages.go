@@ -43,7 +43,7 @@ var MsgTypeNames []string = []string{
 
 // Generic interface used to handle messages
 type MsgData interface {
-	getMsgType() (uint, string)
+	GetMsgType() (uint, string)
 }
 
 // Base data struct for peer messages
@@ -52,64 +52,64 @@ type MsgDataCommon struct {
 }
 
 // Base data struct implements interface method
-func (msgDataCmn MsgDataCommon) getMsgType() (uint, string) {
+func (msgDataCmn MsgDataCommon) GetMsgType() (uint, string) {
 	return msgDataCmn.msgType, MsgTypeNames[msgDataCmn.msgType]
 }
 
 // Choke and Unchoke messages
 type MsgDataChoke struct {
 	MsgDataCommon
-	isChoking bool
+	IsChoking bool
 }
 
 // Interested and Not Interested messages
 type MsgDataInterested struct {
 	MsgDataCommon
-	isInterested bool
+	IsInterested bool
 }
 
 // Have message
 type MsgDataHave struct {
 	MsgDataCommon
-	pieceIndex uint32
+	PieceIndex uint32
 }
 
 // Bitfield message
 type MsgDataBitfield struct {
 	MsgDataCommon
-	bitfieldBytes []byte
+	Bitfield []byte
 }
 
 // Request and cancel messages
 type MsgDataRequestCancel struct {
 	MsgDataCommon
-	pieceIndex      uint32
-	pieceBytesBegin uint32
-	pieceBytesLen   uint32
+	PieceIndex      uint32
+	PieceBytesBegin uint32
+	PieceBytesLen   uint32
 }
 
 // Piece message
 type MsgDataPiece struct {
 	MsgDataCommon
-	pieceIndex      uint32
-	pieceBytesBegin uint32
-	pieceBlock      []byte
+	PieceIndex      uint32
+	PieceBytesBegin uint32
+	PieceBlock      []byte
 }
 
 // Handshake message
 type MsgDataHandshake struct {
 	MsgDataCommon
-	protocolStrLen int
-	protocolStr    string
-	reservedBytes  string
-	infoHash       string
-	peerId         string
+	ProtocolStrLen int
+	ProtocolStr    string
+	ReservedBytes  string
+	InfoHash       string
+	PeerId         string
 }
 
 // Port message
 type MsgDataPort struct {
 	MsgDataCommon
-	peerPort uint16
+	PeerPort uint16
 }
 
 // Gets message type from raw buffer received from peer
@@ -157,9 +157,9 @@ func DecodeMessage(buf []byte) (MsgData, bool) {
 		var msgData MsgDataChoke
 		msgData.msgType = msgType
 		if msgType == MsgTypeChoke {
-			msgData.isChoking = true
+			msgData.IsChoking = true
 		} else {
-			msgData.isChoking = false
+			msgData.IsChoking = false
 		}
 		return msgData, true
 
@@ -168,9 +168,9 @@ func DecodeMessage(buf []byte) (MsgData, bool) {
 		var msgData MsgDataInterested
 		msgData.msgType = msgType
 		if msgType == MsgTypeInterested {
-			msgData.isInterested = true
+			msgData.IsInterested = true
 		} else {
-			msgData.isInterested = false
+			msgData.IsInterested = false
 		}
 		return msgData, true
 
@@ -178,50 +178,50 @@ func DecodeMessage(buf []byte) (MsgData, bool) {
 		// <id=4><piece index>
 		var msgData MsgDataHave
 		msgData.msgType = msgType
-		msgData.pieceIndex = getUint32FromBytes(buf[1:5])
+		msgData.PieceIndex = getUint32FromBytes(buf[1:5])
 		return msgData, true
 
 	case MsgTypeBitfield:
 		// <id=5><bitfield>
 		var msgData MsgDataBitfield
 		msgData.msgType = msgType
-		msgData.bitfieldBytes = buf[1:]
+		msgData.Bitfield = buf[1:]
 		return msgData, true
 
 	case MsgTypePiece:
 		// <id=7><index><begin><block>
 		var msgData MsgDataPiece
 		msgData.msgType = msgType
-		msgData.pieceIndex = getUint32FromBytes(buf[1:5])
-		msgData.pieceBytesBegin = getUint32FromBytes(buf[5:9])
-		msgData.pieceBlock = buf[9:]
+		msgData.PieceIndex = getUint32FromBytes(buf[1:5])
+		msgData.PieceBytesBegin = getUint32FromBytes(buf[5:9])
+		msgData.PieceBlock = buf[9:]
 		return msgData, true
 
 	case MsgTypeRequest, MsgTypeCancel:
 		// <id=6/8><index><begin><length>
 		var msgData MsgDataRequestCancel
 		msgData.msgType = msgType
-		msgData.pieceIndex = getUint32FromBytes(buf[1:5])
-		msgData.pieceBytesBegin = getUint32FromBytes(buf[5:9])
-		msgData.pieceBytesLen = getUint32FromBytes(buf[9:13])
+		msgData.PieceIndex = getUint32FromBytes(buf[1:5])
+		msgData.PieceBytesBegin = getUint32FromBytes(buf[5:9])
+		msgData.PieceBytesLen = getUint32FromBytes(buf[9:13])
 		return msgData, true
 
 	case MsgTypePort:
 		// <id=9><listen-port>
 		var msgData MsgDataPort
 		msgData.msgType = msgType
-		msgData.peerPort = getUint16FromBytes(buf[1:3])
+		msgData.PeerPort = getUint16FromBytes(buf[1:3])
 		return msgData, true
 
 	case MsgTypeHandshake:
 		// <pstrlen><pstr><reserved><info_hash><peer_id>
 		var msgData MsgDataHandshake
 		msgData.msgType = msgType
-		msgData.protocolStrLen = int(buf[0])
-		msgData.protocolStr = string(buf[1:20])
-		msgData.reservedBytes = string(buf[20:28])
-		msgData.infoHash = string(buf[28:48])
-		msgData.peerId = string(buf[48:68])
+		msgData.ProtocolStrLen = int(buf[0])
+		msgData.ProtocolStr = string(buf[1:20])
+		msgData.ReservedBytes = string(buf[20:28])
+		msgData.InfoHash = string(buf[28:48])
+		msgData.PeerId = string(buf[48:68])
 		return msgData, true
 
 	case MsgTypeKeepAlive:
@@ -258,18 +258,18 @@ func EncodeMessage(msgType uint, msgData MsgData) ([]byte, bool) {
 		}
 		buf.Write(getBytesFromUint32(5))                  // len
 		buf.WriteByte(byte(4))                            // id
-		buf.Write(getBytesFromUint32(msgHave.pieceIndex)) // piece index
+		buf.Write(getBytesFromUint32(msgHave.PieceIndex)) // piece index
 
 	case MsgTypeBitfield:
 		// <len=0001+X><id=5><bitfield>
 		msgBitfield, ok := msgData.(MsgDataBitfield)
-		if !ok || len(msgBitfield.bitfieldBytes) <= 0 {
+		if !ok || len(msgBitfield.Bitfield) <= 0 {
 			return buf.Bytes(), false
 		}
-		msgLen := uint32(1 + len(msgBitfield.bitfieldBytes))
+		msgLen := uint32(1 + len(msgBitfield.Bitfield))
 		buf.Write(getBytesFromUint32(msgLen)) // len
 		buf.WriteByte(byte(5))                // id
-		buf.Write(msgBitfield.bitfieldBytes)  // bitfield
+		buf.Write(msgBitfield.Bitfield)       // bitfield
 
 	case MsgTypeRequest, MsgTypeCancel:
 		// <len=0013><id=6/8><index><begin><length>
@@ -283,22 +283,22 @@ func EncodeMessage(msgType uint, msgData MsgData) ([]byte, bool) {
 		} else {
 			buf.WriteByte(byte(8)) // id
 		}
-		buf.Write(getBytesFromUint32(msgReqCancl.pieceIndex))      // piece index
-		buf.Write(getBytesFromUint32(msgReqCancl.pieceBytesBegin)) // piece begin
-		buf.Write(getBytesFromUint32(msgReqCancl.pieceBytesLen))   // piece len
+		buf.Write(getBytesFromUint32(msgReqCancl.PieceIndex))      // piece index
+		buf.Write(getBytesFromUint32(msgReqCancl.PieceBytesBegin)) // piece begin
+		buf.Write(getBytesFromUint32(msgReqCancl.PieceBytesLen))   // piece len
 
 	case MsgTypePiece:
 		// <len=0009+X><id=7><index><begin><block>
 		msgPiece, ok := msgData.(MsgDataPiece)
-		if !ok || len(msgPiece.pieceBlock) <= 0 {
+		if !ok || len(msgPiece.PieceBlock) <= 0 {
 			return buf.Bytes(), false
 		}
-		msgLen := uint32(9 + len(msgPiece.pieceBlock))
+		msgLen := uint32(9 + len(msgPiece.PieceBlock))
 		buf.Write(getBytesFromUint32(msgLen))                   // len
 		buf.WriteByte(byte(7))                                  // id
-		buf.Write(getBytesFromUint32(msgPiece.pieceIndex))      // peice index
-		buf.Write(getBytesFromUint32(msgPiece.pieceBytesBegin)) // piece begin
-		buf.Write(msgPiece.pieceBlock)                          // block
+		buf.Write(getBytesFromUint32(msgPiece.PieceIndex))      // peice index
+		buf.Write(getBytesFromUint32(msgPiece.PieceBytesBegin)) // piece begin
+		buf.Write(msgPiece.PieceBlock)                          // block
 
 	case MsgTypePort:
 		// <len=0003><id=9><listen-port>
@@ -308,7 +308,7 @@ func EncodeMessage(msgType uint, msgData MsgData) ([]byte, bool) {
 		}
 		buf.Write(getBytesFromUint32(3))                // len
 		buf.WriteByte(byte(9))                          // id
-		buf.Write(getBytesFromUint16(msgPort.peerPort)) // listen-port
+		buf.Write(getBytesFromUint16(msgPort.PeerPort)) // listen-port
 
 	case MsgTypeHandshake:
 		// <pstrlen><pstr><reserved><info_hash><peer_id>
@@ -321,8 +321,8 @@ func EncodeMessage(msgType uint, msgData MsgData) ([]byte, bool) {
 		for i := 0; i < 8; i++ {       // reserved
 			buf.WriteByte(0)
 		}
-		buf.WriteString(msgHs.infoHash) // info hash
-		buf.WriteString(msgHs.peerId)   // my id
+		buf.WriteString(msgHs.InfoHash) // info hash
+		buf.WriteString(msgHs.PeerId)   // my id
 
 	case MsgTypeKeepAlive:
 		// <len=0000>
