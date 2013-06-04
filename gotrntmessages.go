@@ -114,26 +114,16 @@ type MsgDataPort struct {
 
 // Gets message type from raw buffer received from peer
 func GetMessageType(buf []byte) (uint, string) {
-	bufLen := len(buf)
-	if bufLen <= 0 {
-		return MsgTypeInvalid, MsgTypeNames[MsgTypeInvalid]
-	}
-	if bufLen > int(goTrntHeaderLen) && buf[0] == goTrntHeaderLen &&
+	if len(buf) > int(goTrntHeaderLen) && buf[0] == goTrntHeaderLen &&
 		string(buf[1:1+goTrntHeaderLen]) == goTrntHeader {
-		/*
-		 * This is handshake message if first byte is length
-		 * of protocol name and bytes that follow it is
-		 * protocol name string itself.
-		 */
+		// This is handshake message, if first byte is length
+		// of protocol name and bytes that follow it is
+		// protocol name string itself.
 		return MsgTypeHandshake, MsgTypeNames[MsgTypeHandshake]
-	} else if buf[0] >= MsgTypeChoke && buf[0] <= MsgTypePort {
-		/*
-		 * BitTorrent messages are of format <len><id><payload>.
-		 * But, <len> is already read by PeerInfo.ReadMessageLenFromPeer().
-		 * Here we just have buffer starting from <id> itself. So,
-		 * just return first byte itself as message type.
-		 */
-		msgType := uint(buf[0])
+	} else if len(buf) > 4 {
+		// BitTorrent messages are of format <len><id><payload>,
+		// where <len> is of four bytes.
+		msgType := uint(buf[4])
 		if msgType > MsgTypeInvalid {
 			msgType = MsgTypeInvalid
 		}
@@ -151,6 +141,12 @@ func DecodeMessage(buf []byte) (MsgData, bool) {
 
 	// Get message type from buffer
 	msgType, _ := GetMessageType(buf)
+
+	// Remove <len> prefix from buffer, as we no longer need it.
+	if msgType >= MsgTypeChoke && msgType <= MsgTypePort {
+		buf = buf[4:]
+	}
+
 	switch msgType {
 	case MsgTypeChoke, MsgTypeUnchoke:
 		// <len=0001><id=0/1>
